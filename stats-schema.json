@@ -1,0 +1,1352 @@
+{
+  "entity": "team",
+  "level": ["game", "season"],
+  "version": "1.0",
+  "groups": {
+    "results": {
+      "description": "Overall game results and scoring.",
+      "stats": {
+        "games_played": {
+          "name": "Games Played",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of games the team has played.",
+          "formula": "games_played = count(games)"
+        },
+        "wins": {
+          "name": "Wins",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of games won.",
+          "formula": "wins = count(games where team_points > opponent_points)"
+        },
+        "losses": {
+          "name": "Losses",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of games lost.",
+          "formula": "losses = count(games where team_points < opponent_points)"
+        },
+        "ties": {
+          "name": "Ties",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of games tied.",
+          "formula": "ties = count(games where team_points = opponent_points)"
+        },
+        "win_pct": {
+          "name": "Win Percentage",
+          "phase": "team",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Wins as a fraction of decisions (wins + losses).",
+          "formula": "win_pct = wins / (wins + losses) if (wins + losses) > 0 else null"
+        },
+        "points_for": {
+          "name": "Points Scored",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points",
+          "definition": "Total points scored by the team.",
+          "formula": "points_for = sum_over_games(team_points)"
+        },
+        "points_against": {
+          "name": "Points Allowed",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points",
+          "definition": "Total points allowed by the team.",
+          "formula": "points_against = sum_over_games(opponent_points)"
+        },
+        "point_differential": {
+          "name": "Point Differential",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points",
+          "definition": "Margin of points scored minus points allowed.",
+          "formula": "point_differential = points_for - points_against"
+        },
+        "points_for_per_game": {
+          "name": "Points For Per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points_per_game",
+          "definition": "Average points scored per game.",
+          "formula": "points_for_per_game = points_for / games_played"
+        },
+        "points_against_per_game": {
+          "name": "Points Against Per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points_per_game",
+          "definition": "Average points allowed per game.",
+          "formula": "points_against_per_game = points_against / games_played"
+        },
+        "scoring_margin_per_game": {
+          "name": "Scoring Margin Per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "points_per_game",
+          "definition": "Average point differential per game.",
+          "formula": "scoring_margin_per_game = point_differential / games_played"
+        },
+        "one_score_games_played": {
+          "name": "One-Score Games Played",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of games decided by 8 points or fewer.",
+          "formula": "one_score_games_played = count(games where abs(team_points - opponent_points) <= 8)"
+        },
+        "one_score_win_pct": {
+          "name": "One-Score Win Percentage",
+          "phase": "team",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Win rate in games decided by 8 points or fewer.",
+          "formula": "one_score_win_pct = one_score_wins / (one_score_wins + one_score_losses) where one_score_wins = count(games where abs(team_points - opponent_points) <= 8 and team_points > opponent_points) and one_score_losses = count(games where abs(team_points - opponent_points) <= 8 and team_points < opponent_points)"
+        }
+      }
+    },
+    "offense_basic": {
+      "description": "Standard offensive volume stats.",
+      "stats": {
+        "off_plays": {
+          "name": "Offensive Plays",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total offensive plays run by the team (rushes + passes + sacks).",
+          "formula": "off_plays = count(plays where possession_team = team and play_type in {rush, pass, sack})"
+        },
+        "off_yards": {
+          "name": "Offensive Yards",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total net yards gained on offense.",
+          "formula": "off_yards = sum_over_plays(net_yards where possession_team = team)"
+        },
+        "off_first_downs_total": {
+          "name": "Total Offensive First Downs",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total first downs earned by the offense.",
+          "formula": "off_first_downs_total = sum_over_games(boxscore_off_first_downs_total)"
+        },
+        "off_first_downs_rush": {
+          "name": "Rushing First Downs",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "First downs earned via rushing plays.",
+          "formula": "off_first_downs_rush = sum_over_plays(is_first_down and play_type = rush and possession_team = team)"
+        },
+        "off_first_downs_pass": {
+          "name": "Passing First Downs",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "First downs earned via passing plays (completions or penalties).",
+          "formula": "off_first_downs_pass = sum_over_plays(is_first_down and play_type in {pass, sack} and possession_team = team)"
+        },
+        "off_first_downs_penalty": {
+          "name": "First Downs by Penalty",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "First downs awarded to the offense via penalty.",
+          "formula": "off_first_downs_penalty = sum_over_plays(is_first_down and first_down_via_penalty and possession_team = team)"
+        },
+        "rush_att_off": {
+          "name": "Rushing Attempts (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total team rushing attempts.",
+          "formula": "rush_att_off = count(plays where play_type = rush and possession_team = team)"
+        },
+        "rush_yds_off": {
+          "name": "Rushing Yards (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total rushing yards gained by the offense.",
+          "formula": "rush_yds_off = sum_over_plays(rush_yards where play_type = rush and possession_team = team)"
+        },
+        "rush_tds_off": {
+          "name": "Rushing Touchdowns (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Rushing touchdowns scored by the offense.",
+          "formula": "rush_tds_off = count(plays where play_type = rush and touchdown and possession_team = team)"
+        },
+        "pass_att_off": {
+          "name": "Pass Attempts (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total pass attempts by the offense (including plays with sacks and pass interference).",
+          "formula": "pass_att_off = count(plays where play_type in {pass, sack} and possession_team = team)"
+        },
+        "pass_cmp_off": {
+          "name": "Pass Completions (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Completed passes by the offense.",
+          "formula": "pass_cmp_off = count(plays where complete_pass and possession_team = team)"
+        },
+        "pass_yds_off": {
+          "name": "Passing Yards (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total gross passing yards gained.",
+          "formula": "pass_yds_off = sum_over_plays(passing_yards where possession_team = team)"
+        },
+        "pass_tds_off": {
+          "name": "Passing Touchdowns (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Passing touchdowns thrown by the offense.",
+          "formula": "pass_tds_off = count(plays where touchdown and pass_result in {complete, incomplete, intercepted} and possession_team = team and pass_is_forward)"
+        },
+        "ints_thrown_off": {
+          "name": "Interceptions Thrown",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Passes intercepted by the defense.",
+          "formula": "ints_thrown_off = count(plays where interception and possession_team = team)"
+        },
+        "sacks_taken_off": {
+          "name": "Sacks Taken",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of times the offense's QB was sacked.",
+          "formula": "sacks_taken_off = count(plays where play_type = sack and possession_team = team)"
+        },
+        "sack_yards_lost_off": {
+          "name": "Sack Yards Lost (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total yards lost on sacks taken by the offense.",
+          "formula": "sack_yards_lost_off = -1 * sum_over_plays(net_yards where play_type = sack and possession_team = team)"
+        },
+        "fumbles_off": {
+          "name": "Fumbles (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total fumbles committed by the offense.",
+          "formula": "fumbles_off = count(plays where fumble and possession_team = team)"
+        },
+        "fumbles_lost_off": {
+          "name": "Fumbles Lost (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Fumbles by the offense that result in a change of possession.",
+          "formula": "fumbles_lost_off = count(plays where fumble_lost and possession_team = team)"
+        },
+        "offensive_penalties": {
+          "name": "Offensive Penalties",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Penalties called against the offense.",
+          "formula": "offensive_penalties = count(plays where penalty_on_offense and penalized_team = team)"
+        },
+        "offensive_penalty_yards": {
+          "name": "Offensive Penalty Yards",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total yards penalized against the offense.",
+          "formula": "offensive_penalty_yards = sum_over_plays(penalty_yards where penalty_on_offense and penalized_team = team)"
+        }
+      }
+    },
+    "offense_efficiency": {
+      "description": "Offensive efficiency and drive metrics.",
+      "stats": {
+        "yards_per_play_off": {
+          "name": "Yards per Play (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards_per_play",
+          "definition": "Average yards gained per offensive play.",
+          "formula": "yards_per_play_off = off_yards / off_plays"
+        },
+        "yards_per_rush_off": {
+          "name": "Yards per Rush (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards_per_rush",
+          "definition": "Average yards gained per rushing attempt.",
+          "formula": "yards_per_rush_off = rush_yds_off / rush_att_off"
+        },
+        "yards_per_pass_attempt_off": {
+          "name": "Yards per Pass Attempt (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards_per_attempt",
+          "definition": "Average passing yards per pass attempt (excluding sacks).",
+          "formula": "yards_per_pass_attempt_off = pass_yds_off / pass_att_off"
+        },
+        "net_yards_per_pass_attempt_off": {
+          "name": "Net Yards per Pass Attempt (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "yards_per_attempt",
+          "definition": "Passing yards per attempt including sack yardage.",
+          "formula": "net_yards_per_pass_attempt_off = (pass_yds_off - sack_yards_lost_off) / (pass_att_off + sacks_taken_off)"
+        },
+        "completion_pct_off": {
+          "name": "Completion Percentage (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Completed passes divided by pass attempts.",
+          "formula": "completion_pct_off = pass_cmp_off / pass_att_off"
+        },
+        "off_drives": {
+          "name": "Offensive Drives",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total offensive drives.",
+          "formula": "off_drives = count(drives where offensive_team = team)"
+        },
+        "off_points_per_drive": {
+          "name": "Points per Drive (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "points_per_drive",
+          "definition": "Average points scored per offensive drive.",
+          "formula": "off_points_per_drive = points_for / off_drives"
+        },
+        "off_td_drives": {
+          "name": "Drives Ending in TD (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of offensive drives ending with a touchdown.",
+          "formula": "off_td_drives = count(drives where offensive_team = team and result = 'TD')"
+        },
+        "off_fg_drives": {
+          "name": "Drives Ending in FG (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of offensive drives ending with a made field goal.",
+          "formula": "off_fg_drives = count(drives where offensive_team = team and result = 'FG')"
+        },
+        "off_punt_drives": {
+          "name": "Drives Ending in Punt (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of offensive drives ending with a punt.",
+          "formula": "off_punt_drives = count(drives where offensive_team = team and result = 'PUNT')"
+        },
+        "off_turnover_drives": {
+          "name": "Drives Ending in Turnover (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of offensive drives ending with a turnover including downs.",
+          "formula": "off_turnover_drives = count(drives where offensive_team = team and result in {'INT','FUMBLE','DOWNS','SAFETY'})"
+        },
+        "off_3_and_out_drives": {
+          "name": "3-and-Out Drives (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Offensive drives that end after 3 or fewer plays with no first down.",
+          "formula": "off_3_and_out_drives = count(drives where offensive_team = team and plays_in_drive <= 3 and first_downs_in_drive = 0)"
+        },
+        "off_3_and_out_rate": {
+          "name": "3-and-Out Rate (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Fraction of offensive drives that are 3-and-out.",
+          "formula": "off_3_and_out_rate = off_3_and_out_drives / off_drives"
+        },
+        "off_3rd_down_att": {
+          "name": "3rd Down Attempts (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of third-down plays for the offense.",
+          "formula": "off_3rd_down_att = count(plays where possession_team = team and down = 3)"
+        },
+        "off_3rd_down_conv": {
+          "name": "3rd Down Conversions (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Third-down plays where the offense gains a new first down or scores.",
+          "formula": "off_3rd_down_conv = count(plays where possession_team = team and down = 3 and first_down_or_td)"
+        },
+        "off_3rd_down_pct": {
+          "name": "3rd Down Conversion Percentage (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Third-down conversions divided by third-down attempts.",
+          "formula": "off_3rd_down_pct = off_3rd_down_conv / off_3rd_down_att"
+        },
+        "off_4th_down_att": {
+          "name": "4th Down Attempts (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of fourth-down offensive plays.",
+          "formula": "off_4th_down_att = count(plays where possession_team = team and down = 4 and not (play_type = punt or play_type = field_goal))"
+        },
+        "off_4th_down_conv": {
+          "name": "4th Down Conversions (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Fourth-down plays where the offense gains a new first down or scores.",
+          "formula": "off_4th_down_conv = count(plays where possession_team = team and down = 4 and first_down_or_td and not (play_type = punt or play_type = field_goal))"
+        },
+        "off_4th_down_pct": {
+          "name": "4th Down Conversion Percentage (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Fourth-down conversions divided by attempts.",
+          "formula": "off_4th_down_pct = off_4th_down_conv / off_4th_down_att"
+        },
+        "off_red_zone_trips": {
+          "name": "Red Zone Trips (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of offensive drives with at least one snap inside opponent's 20.",
+          "formula": "off_red_zone_trips = count(drives where offensive_team = team and any(play.start_yardline <= 20 and play.start_side = 'OPP'))"
+        },
+        "off_red_zone_tds": {
+          "name": "Red Zone Touchdowns (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Touchdown-scoring drives that included a snap in the red zone.",
+          "formula": "off_red_zone_tds = count(drives where offensive_team = team and result = 'TD' and any(play.start_yardline <= 20 and play.start_side = 'OPP'))"
+        },
+        "off_red_zone_td_pct": {
+          "name": "Red Zone TD Percentage (Offense)",
+          "phase": "offense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Fraction of red zone trips that end in a touchdown.",
+          "formula": "off_red_zone_td_pct = off_red_zone_tds / off_red_zone_trips"
+        }
+      }
+    },
+    "defense_basic": {
+      "description": "Standard defensive volume stats.",
+      "stats": {
+        "def_plays": {
+          "name": "Defensive Plays",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total plays the defense faced.",
+          "formula": "def_plays = count(plays where defense_team = team and play_type in {rush, pass, sack})"
+        },
+        "def_yards_allowed": {
+          "name": "Yards Allowed (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total net yards allowed by the defense.",
+          "formula": "def_yards_allowed = sum_over_plays(net_yards where defense_team = team)"
+        },
+        "rush_att_def": {
+          "name": "Rushing Attempts Faced (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Opponent rushing attempts.",
+          "formula": "rush_att_def = count(plays where play_type = rush and defense_team = team)"
+        },
+        "rush_yds_allowed": {
+          "name": "Rushing Yards Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Rushing yards allowed by the defense.",
+          "formula": "rush_yds_allowed = sum_over_plays(rush_yards where play_type = rush and defense_team = team)"
+        },
+        "rush_tds_allowed": {
+          "name": "Rushing TDs Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Rushing touchdowns allowed.",
+          "formula": "rush_tds_allowed = count(plays where play_type = rush and touchdown and defense_team = team)"
+        },
+        "pass_att_def": {
+          "name": "Pass Attempts Faced (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Opponent pass attempts (including sacks).",
+          "formula": "pass_att_def = count(plays where play_type in {pass, sack} and defense_team = team)"
+        },
+        "pass_cmp_def": {
+          "name": "Completions Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Completed passes allowed.",
+          "formula": "pass_cmp_def = count(plays where complete_pass and defense_team = team)"
+        },
+        "pass_yds_allowed": {
+          "name": "Passing Yards Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Passing yards allowed by the defense.",
+          "formula": "pass_yds_allowed = sum_over_plays(passing_yards where defense_team = team)"
+        },
+        "pass_tds_allowed": {
+          "name": "Passing TDs Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Passing touchdowns allowed.",
+          "formula": "pass_tds_allowed = count(plays where touchdown and pass_result in {complete, incomplete, intercepted} and defense_team = team and pass_is_forward)"
+        },
+        "sacks_def": {
+          "name": "Sacks (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Sacks recorded by the defense.",
+          "formula": "sacks_def = count(plays where play_type = sack and defense_team = team)"
+        },
+        "sack_yards_def": {
+          "name": "Sack Yards (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Yards lost on sacks created by the defense.",
+          "formula": "sack_yards_def = -1 * sum_over_plays(net_yards where play_type = sack and defense_team = team)"
+        },
+        "ints_def": {
+          "name": "Interceptions (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Interceptions made by the defense.",
+          "formula": "ints_def = count(plays where interception and defense_team = team)"
+        },
+        "forced_fumbles_def": {
+          "name": "Forced Fumbles (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Fumbles forced by the defense.",
+          "formula": "forced_fumbles_def = count(plays where fumble and fumble_forced_by_defense and defense_team = team)"
+        },
+        "fumble_recoveries_def": {
+          "name": "Fumble Recoveries (Defense)",
+          "phase": "defense",
+          "unit": "count",
+          "type": "standard",
+          "definition": "Fumbles recovered by the defense.",
+          "formula": "fumble_recoveries_def = count(plays where fumble and recovered_by_defense and defense_team = team)"
+        },
+        "defensive_tds": {
+          "name": "Defensive Touchdowns",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Touchdowns scored by the defense (e.g., pick-six, fumble return, safety).",
+          "formula": "defensive_tds = count(plays where defense_team = team and touchdown and return_team = team)"
+        },
+        "defensive_penalties": {
+          "name": "Defensive Penalties",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Penalties called against the defense.",
+          "formula": "defensive_penalties = count(plays where penalty_on_defense and penalized_team = team)"
+        },
+        "defensive_penalty_yards": {
+          "name": "Defensive Penalty Yards",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total yards penalized against the defense.",
+          "formula": "defensive_penalty_yards = sum_over_plays(penalty_yards where penalty_on_defense and penalized_team = team)"
+        }
+      }
+    },
+    "defense_efficiency": {
+      "description": "Defensive efficiency and drive metrics.",
+      "stats": {
+        "yards_per_play_def": {
+          "name": "Yards per Play Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards_per_play",
+          "definition": "Average yards allowed per defensive play.",
+          "formula": "yards_per_play_def = def_yards_allowed / def_plays"
+        },
+        "yards_per_rush_def": {
+          "name": "Yards per Rush Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards_per_rush",
+          "definition": "Average yards allowed per opponent rush.",
+          "formula": "yards_per_rush_def = rush_yds_allowed / rush_att_def"
+        },
+        "yards_per_pass_attempt_def": {
+          "name": "Yards per Pass Attempt Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards_per_attempt",
+          "definition": "Passing yards allowed per opponent attempt (excluding sacks).",
+          "formula": "yards_per_pass_attempt_def = pass_yds_allowed / pass_att_def"
+        },
+        "net_yards_per_pass_attempt_def": {
+          "name": "Net Yards per Pass Attempt Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "yards_per_attempt",
+          "definition": "Passing yards allowed per attempt including sack yardage.",
+          "formula": "net_yards_per_pass_attempt_def = (pass_yds_allowed - sack_yards_def) / (pass_att_def + sacks_def)"
+        },
+        "completion_pct_def": {
+          "name": "Completion Percentage Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Opponent completions divided by attempts.",
+          "formula": "completion_pct_def = pass_cmp_def / pass_att_def"
+        },
+        "def_drives": {
+          "name": "Defensive Drives",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of defensive drives faced.",
+          "formula": "def_drives = count(drives where defensive_team = team)"
+        },
+        "def_points_per_drive": {
+          "name": "Points Allowed per Drive",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "points_per_drive",
+          "definition": "Average points allowed per defensive drive.",
+          "formula": "def_points_per_drive = points_against / def_drives"
+        },
+        "def_td_drives_allowed": {
+          "name": "Drives Ending in TD Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Defensive drives that end in an opponent touchdown.",
+          "formula": "def_td_drives_allowed = count(drives where defensive_team = team and result = 'TD')"
+        },
+        "def_fg_drives_allowed": {
+          "name": "Drives Ending in FG Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Defensive drives that end in an opponent made field goal.",
+          "formula": "def_fg_drives_allowed = count(drives where defensive_team = team and result = 'FG')"
+        },
+        "takeaways": {
+          "name": "Takeaways",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Total turnovers gained by the defense (INT + fumble recoveries).",
+          "formula": "takeaways = ints_def + fumble_recoveries_def"
+        },
+        "takeaways_per_game": {
+          "name": "Takeaways per Game",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count_per_game",
+          "definition": "Average takeaways per game.",
+          "formula": "takeaways_per_game = takeaways / games_played"
+        },
+        "def_3rd_down_att": {
+          "name": "3rd Down Attempts Faced (Defense)",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Third-down plays faced by the defense.",
+          "formula": "def_3rd_down_att = count(plays where defense_team = team and down = 3)"
+        },
+        "def_3rd_down_conv": {
+          "name": "3rd Down Conversions Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Third-down plays where the offense converts against this defense.",
+          "formula": "def_3rd_down_conv = count(plays where defense_team = team and down = 3 and first_down_or_td_for_offense)"
+        },
+        "def_3rd_down_pct": {
+          "name": "3rd Down Conversion Percentage Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Opponents' third-down conversions divided by attempts.",
+          "formula": "def_3rd_down_pct = def_3rd_down_conv / def_3rd_down_att"
+        },
+        "def_red_zone_trips_allowed": {
+          "name": "Red Zone Trips Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Drives by opponents with at least one snap inside this team's 20.",
+          "formula": "def_red_zone_trips_allowed = count(drives where defensive_team = team and any(play.start_yardline <= 20 and play.start_side = 'TEAM'))"
+        },
+        "def_red_zone_tds_allowed": {
+          "name": "Red Zone TDs Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Opponent touchdowns on drives that reached the red zone.",
+          "formula": "def_red_zone_tds_allowed = count(drives where defensive_team = team and result = 'TD' and any(play.start_yardline <= 20 and play.start_side = 'TEAM'))"
+        },
+        "def_red_zone_td_pct_allowed": {
+          "name": "Red Zone TD Percentage Allowed",
+          "phase": "defense",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Fraction of opponent red zone trips that end in a touchdown.",
+          "formula": "def_red_zone_td_pct_allowed = def_red_zone_tds_allowed / def_red_zone_trips_allowed"
+        }
+      }
+    },
+    "special_teams": {
+      "description": "Kicking, punting, and return stats.",
+      "stats": {
+        "fg_made": {
+          "name": "Field Goals Made",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of field goals made.",
+          "formula": "fg_made = count(plays where play_type = field_goal and fg_result = 'made' and kicking_team = team)"
+        },
+        "fg_att": {
+          "name": "Field Goal Attempts",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of field goal attempts.",
+          "formula": "fg_att = count(plays where play_type = field_goal and kicking_team = team)"
+        },
+        "fg_pct": {
+          "name": "Field Goal Percentage",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Made field goals divided by attempts.",
+          "formula": "fg_pct = fg_made / fg_att"
+        },
+        "xp_made": {
+          "name": "Extra Points Made",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Extra points made after touchdowns.",
+          "formula": "xp_made = count(plays where play_type = extra_point and xp_result = 'good' and kicking_team = team)"
+        },
+        "xp_att": {
+          "name": "Extra Point Attempts",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Extra point attempts.",
+          "formula": "xp_att = count(plays where play_type = extra_point and kicking_team = team)"
+        },
+        "xp_pct": {
+          "name": "Extra Point Percentage",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "percent",
+          "definition": "Extra points made divided by attempts.",
+          "formula": "xp_pct = xp_made / xp_att"
+        },
+        "punts": {
+          "name": "Punts",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Number of punts.",
+          "formula": "punts = count(plays where play_type = punt and kicking_team = team)"
+        },
+        "punt_gross_yards": {
+          "name": "Punt Gross Yards",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total distance of punts from line of scrimmage to where the ball is first touched.",
+          "formula": "punt_gross_yards = sum_over_plays(punt_distance where play_type = punt and kicking_team = team)"
+        },
+        "punt_return_yards_allowed": {
+          "name": "Punt Return Yards Allowed",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total punt return yards allowed.",
+          "formula": "punt_return_yards_allowed = sum_over_plays(return_yards where play_type = punt and kicking_team = team)"
+        },
+        "punt_net_yards": {
+          "name": "Punt Net Yards",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Gross punt yards minus return yards and touchback adjustments.",
+          "formula": "punt_net_yards = sum_over_plays(punt_net_distance where play_type = punt and kicking_team = team)"
+        },
+        "punts_inside_20": {
+          "name": "Punts Inside 20",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Punts downed or going out of bounds inside the opponent's 20.",
+          "formula": "punts_inside_20 = count(plays where play_type = punt and kicking_team = team and end_yardline <= 20 and end_side = 'OPP')"
+        },
+        "punt_touchbacks": {
+          "name": "Punt Touchbacks",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Punts resulting in a touchback.",
+          "formula": "punt_touchbacks = count(plays where play_type = punt and touchback and kicking_team = team)"
+        },
+        "kick_returns": {
+          "name": "Kickoff Returns",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Kickoffs returned by the team.",
+          "formula": "kick_returns = count(plays where play_type = kickoff and return_team = team and not touchback)"
+        },
+        "kick_return_yards": {
+          "name": "Kickoff Return Yards",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total yards on kickoff returns.",
+          "formula": "kick_return_yards = sum_over_plays(return_yards where play_type = kickoff and return_team = team)"
+        },
+        "kick_return_tds": {
+          "name": "Kickoff Return TDs",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Touchdowns on kickoff returns.",
+          "formula": "kick_return_tds = count(plays where play_type = kickoff and return_team = team and touchdown)"
+        },
+        "punt_returns": {
+          "name": "Punt Returns",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Punts returned by the team.",
+          "formula": "punt_returns = count(plays where play_type = punt and return_team = team)"
+        },
+        "punt_return_yards": {
+          "name": "Punt Return Yards",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total yards on punt returns.",
+          "formula": "punt_return_yards = sum_over_plays(return_yards where play_type = punt and return_team = team)"
+        },
+        "punt_return_tds": {
+          "name": "Punt Return TDs",
+          "phase": "special_teams",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Touchdowns on punt returns.",
+          "formula": "punt_return_tds = count(plays where play_type = punt and return_team = team and touchdown)"
+        }
+      }
+    },
+    "turnovers_penalties": {
+      "description": "Team-wide turnover and penalty metrics.",
+      "stats": {
+        "turnovers_off": {
+          "name": "Turnovers (Offense)",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Offensive turnovers (interceptions + lost fumbles).",
+          "formula": "turnovers_off = ints_thrown_off + fumbles_lost_off"
+        },
+        "turnover_margin": {
+          "name": "Turnover Margin",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "Takeaways minus offensive turnovers.",
+          "formula": "turnover_margin = takeaways - turnovers_off"
+        },
+        "turnover_margin_per_game": {
+          "name": "Turnover Margin per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count_per_game",
+          "definition": "Average turnover margin per game.",
+          "formula": "turnover_margin_per_game = turnover_margin / games_played"
+        },
+        "total_penalties": {
+          "name": "Total Penalties",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count",
+          "definition": "All penalties committed by the team.",
+          "formula": "total_penalties = offensive_penalties + defensive_penalties + special_teams_penalties"
+        },
+        "total_penalty_yards": {
+          "name": "Total Penalty Yards",
+          "phase": "team",
+          "type": "standard",
+          "unit": "yards",
+          "definition": "Total penalty yards enforced against the team.",
+          "formula": "total_penalty_yards = offensive_penalty_yards + defensive_penalty_yards + special_teams_penalty_yards"
+        },
+        "penalties_per_game": {
+          "name": "Penalties per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "count_per_game",
+          "definition": "Average penalties per game.",
+          "formula": "penalties_per_game = total_penalties / games_played"
+        },
+        "penalty_yards_per_game": {
+          "name": "Penalty Yards per Game",
+          "phase": "team",
+          "type": "standard",
+          "unit": "yards_per_game",
+          "definition": "Average penalty yards per game.",
+          "formula": "penalty_yards_per_game = total_penalty_yards / games_played"
+        }
+      }
+    },
+    "advanced_epa_success": {
+      "description": "EPA and success rate stats for offense and defense.",
+      "stats": {
+        "off_total_epa": {
+          "name": "Total EPA (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA",
+          "definition": "Sum of expected points added on all offensive plays.",
+          "formula": "off_total_epa = sum_over_plays(epa where possession_team = team)"
+        },
+        "off_epa_per_play": {
+          "name": "EPA per Play (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA per offensive play.",
+          "formula": "off_epa_per_play = off_total_epa / off_plays"
+        },
+        "off_epa_per_rush": {
+          "name": "EPA per Rush (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA per offensive rushing play.",
+          "formula": "off_epa_per_rush = sum_over_plays(epa where play_type = rush and possession_team = team) / rush_att_off"
+        },
+        "off_epa_per_pass": {
+          "name": "EPA per Pass (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA per offensive pass play (including sacks).",
+          "formula": "off_epa_per_pass = sum_over_plays(epa where play_type in {pass, sack} and possession_team = team) / pass_att_off"
+        },
+        "off_success_plays": {
+          "name": "Successful Plays (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Offensive plays labeled as successful by a success metric (e.g., EPA > 0 or yardage threshold).",
+          "formula": "off_success_plays = count(plays where possession_team = team and success = 1)"
+        },
+        "off_success_rate": {
+          "name": "Success Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Proportion of offensive plays that are successful.",
+          "formula": "off_success_rate = off_success_plays / off_plays"
+        },
+        "def_total_epa_allowed": {
+          "name": "Total EPA Allowed (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA",
+          "definition": "Sum of EPA from the offense's perspective for plays faced by this defense.",
+          "formula": "def_total_epa_allowed = sum_over_plays(epa where defense_team = team)"
+        },
+        "def_epa_per_play": {
+          "name": "EPA per Play Allowed (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA allowed per play.",
+          "formula": "def_epa_per_play = def_total_epa_allowed / def_plays"
+        },
+        "def_epa_per_rush": {
+          "name": "EPA per Rush Allowed (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA allowed per opponent rushing play.",
+          "formula": "def_epa_per_rush = sum_over_plays(epa where play_type = rush and defense_team = team) / rush_att_def"
+        },
+        "def_epa_per_pass": {
+          "name": "EPA per Pass Allowed (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average EPA allowed per opponent pass play (including sacks).",
+          "formula": "def_epa_per_pass = sum_over_plays(epa where play_type in {pass, sack} and defense_team = team) / pass_att_def"
+        },
+        "def_success_plays": {
+          "name": "Successful Plays for Defense",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Defensive plays where the offense's play is labeled unsuccessful.",
+          "formula": "def_success_plays = count(plays where defense_team = team and success = 0)"
+        },
+        "def_success_rate": {
+          "name": "Defensive Success Rate",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of plays where the defense prevents offensive success.",
+          "formula": "def_success_rate = def_success_plays / def_plays"
+        }
+      }
+    },
+    "advanced_passing": {
+      "description": "Team-level advanced passing metrics.",
+      "stats": {
+        "air_yards_off": {
+          "name": "Air Yards (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "yards",
+          "definition": "Total air yards on offensive passes (distance ball travels in the air past the LOS).",
+          "formula": "air_yards_off = sum_over_plays(air_yards where pass and possession_team = team)"
+        },
+        "yac_off": {
+          "name": "Yards After Catch (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "yards",
+          "definition": "Total yards gained after the catch on completions.",
+          "formula": "yac_off = sum_over_plays(yards_after_catch where complete_pass and possession_team = team)"
+        },
+        "air_yards_per_attempt_off": {
+          "name": "Air Yards per Attempt (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "yards_per_attempt",
+          "definition": "Average air yards per pass attempt.",
+          "formula": "air_yards_per_attempt_off = air_yards_off / pass_att_off"
+        },
+        "yac_per_reception_off": {
+          "name": "YAC per Reception (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "yards_per_reception",
+          "definition": "Average yards after catch per completion.",
+          "formula": "yac_per_reception_off = yac_off / pass_cmp_off"
+        },
+        "cpoe_off": {
+          "name": "Completion Percentage Over Expected (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Difference between actual and expected completion percentage based on pass difficulty model.",
+          "formula": "cpoe_off = (pass_cmp_off / pass_att_off) - expected_completion_pct_off where expected_completion_pct_off = sum_over_plays(expected_completion_prob where pass and possession_team = team) / pass_att_off"
+        },
+        "pressure_dropbacks_off": {
+          "name": "Pressure Dropbacks (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "QB dropbacks where pressure is recorded.",
+          "formula": "pressure_dropbacks_off = count(plays where dropback and pressure and possession_team = team)"
+        },
+        "dropbacks_off": {
+          "name": "Dropbacks (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Total QB dropbacks = pass attempts + sacks + scrambles.",
+          "formula": "dropbacks_off = count(plays where dropback and possession_team = team)"
+        },
+        "pressure_rate_off": {
+          "name": "Pressure Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of dropbacks where the QB is pressured.",
+          "formula": "pressure_rate_off = pressure_dropbacks_off / dropbacks_off"
+        },
+        "sack_to_pressure_rate_off": {
+          "name": "Sack-to-Pressure Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of pressures that result in sacks.",
+          "formula": "sack_to_pressure_rate_off = sacks_taken_off / pressure_dropbacks_off"
+        },
+        "time_to_throw_off": {
+          "name": "Average Time to Throw (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "seconds",
+          "definition": "Average time from snap to pass attempt or sack on dropbacks.",
+          "formula": "time_to_throw_off = sum_over_plays(time_to_throw where dropback and possession_team = team) / dropbacks_off"
+        }
+      }
+    },
+    "advanced_rushing": {
+      "description": "Team-level advanced rushing metrics.",
+      "stats": {
+        "stuffed_runs_off": {
+          "name": "Stuffed Runs (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Rushing plays stopped at or behind the line of scrimmage.",
+          "formula": "stuffed_runs_off = count(plays where play_type = rush and possession_team = team and rush_yards <= 0)"
+        },
+        "stuff_rate_off": {
+          "name": "Stuff Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of team rushes that are stuffed.",
+          "formula": "stuff_rate_off = stuffed_runs_off / rush_att_off"
+        },
+        "explosive_runs_off": {
+          "name": "Explosive Runs (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Rushing plays gaining at least 10 yards.",
+          "formula": "explosive_runs_off = count(plays where play_type = rush and possession_team = team and rush_yards >= 10)"
+        },
+        "explosive_run_rate_off": {
+          "name": "Explosive Run Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of rushing plays that are explosive.",
+          "formula": "explosive_run_rate_off = explosive_runs_off / rush_att_off"
+        },
+        "designed_qb_runs_off": {
+          "name": "Designed QB Runs (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Rushing plays where the QB is the ball carrier on a designed run.",
+          "formula": "designed_qb_runs_off = count(plays where play_type = rush and rusher_is_qb and is_designed_run and possession_team = team)"
+        },
+        "qb_scrambles_off": {
+          "name": "QB Scrambles (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "count",
+          "definition": "Scrambles on pass plays where the QB runs instead of throwing.",
+          "formula": "qb_scrambles_off = count(plays where scramble and possession_team = team)"
+        }
+      }
+    },
+    "situational_leverage": {
+      "description": "3rd/4th down, 2-minute, and close-game situational stats.",
+      "stats": {
+        "late_down_epa_off": {
+          "name": "Late Down EPA per Play (Offense, 3rd & 4th)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play on 3rd and 4th down.",
+          "formula": "late_down_epa_off = sum_over_plays(epa where possession_team = team and down in {3,4}) / count(plays where possession_team = team and down in {3,4})"
+        },
+        "late_down_epa_def": {
+          "name": "Late Down EPA per Play Allowed (Defense, 3rd & 4th)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play allowed on 3rd and 4th down.",
+          "formula": "late_down_epa_def = sum_over_plays(epa where defense_team = team and down in {3,4}) / count(plays where defense_team = team and down in {3,4})"
+        },
+        "two_min_epa_off": {
+          "name": "2-Minute EPA per Play (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play for the offense in final 2 minutes of each half.",
+          "formula": "two_min_epa_off = sum_over_plays(epa where possession_team = team and seconds_remaining_in_half <= 120) / count(plays where possession_team = team and seconds_remaining_in_half <= 120)"
+        },
+        "two_min_epa_def": {
+          "name": "2-Minute EPA per Play Allowed (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play allowed in the final 2 minutes of each half.",
+          "formula": "two_min_epa_def = sum_over_plays(epa where defense_team = team and seconds_remaining_in_half <= 120) / count(plays where defense_team = team and seconds_remaining_in_half <= 120)"
+        },
+        "close_game_epa_off": {
+          "name": "EPA per Play in Close Games (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play when absolute score differential is <= 8.",
+          "formula": "close_game_epa_off = sum_over_plays(epa where possession_team = team and abs(score_diff_before_play) <= 8) / count(plays where possession_team = team and abs(score_diff_before_play) <= 8)"
+        },
+        "close_game_epa_def": {
+          "name": "EPA per Play Allowed in Close Games (Defense)",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "EPA per play allowed when absolute score differential is <= 8.",
+          "formula": "close_game_epa_def = sum_over_plays(epa where defense_team = team and abs(score_diff_before_play) <= 8) / count(plays where defense_team = team and abs(score_diff_before_play) <= 8)"
+        }
+      }
+    },
+    "style_pace": {
+      "description": "Pace, run/pass ratio, and style metrics.",
+      "stats": {
+        "off_seconds_per_play": {
+          "name": "Seconds per Offensive Play",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "seconds_per_play",
+          "definition": "Average time elapsed between offensive snaps.",
+          "formula": "off_seconds_per_play = total_offensive_seconds / off_plays where total_offensive_seconds = sum_over_drives(elapsed_time for drives where offensive_team = team)"
+        },
+        "off_run_play_pct": {
+          "name": "Run Play Percentage (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of offensive plays that are designed rushes.",
+          "formula": "off_run_play_pct = rush_att_off / off_plays"
+        },
+        "off_pass_play_pct": {
+          "name": "Pass Play Percentage (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of offensive plays that are pass plays (including sacks).",
+          "formula": "off_pass_play_pct = (pass_att_off + sacks_taken_off) / off_plays"
+        },
+        "play_action_rate_off": {
+          "name": "Play-Action Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of dropbacks that use play-action.",
+          "formula": "play_action_rate_off = count(plays where dropback and play_action and possession_team = team) / dropbacks_off"
+        },
+        "shotgun_rate_off": {
+          "name": "Shotgun Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of offensive plays run from shotgun.",
+          "formula": "shotgun_rate_off = count(plays where possession_team = team and shotgun) / off_plays"
+        },
+        "no_huddle_rate_off": {
+          "name": "No-Huddle Rate (Offense)",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Fraction of offensive plays run in no-huddle situations.",
+          "formula": "no_huddle_rate_off = count(plays where possession_team = team and no_huddle) / off_plays"
+        }
+      }
+    },
+    "schedule_adjusted": {
+      "description": "Opponent- and schedule-adjusted efficiency metrics.",
+      "stats": {
+        "avg_opponent_off_epa_per_play": {
+          "name": "Average Opponent Offensive EPA per Play",
+          "phase": "team",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average offensive EPA/play of opponents across all games (in games not only vs this team).",
+          "formula": "avg_opponent_off_epa_per_play = mean_over_games(opponent.off_epa_per_play_season_excluding_games_vs_team)"
+        },
+        "avg_opponent_def_epa_per_play": {
+          "name": "Average Opponent Defensive EPA per Play",
+          "phase": "team",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average defensive EPA/play of opponents across all games.",
+          "formula": "avg_opponent_def_epa_per_play = mean_over_games(opponent.def_epa_per_play_season_excluding_games_vs_team)"
+        },
+        "off_epa_per_play_adj": {
+          "name": "Opponent-Adjusted Offense EPA per Play",
+          "phase": "offense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Offensive EPA/play adjusted relative to average defensive strength of opponents.",
+          "formula": "off_epa_per_play_adj = off_epa_per_play - avg_opponent_def_epa_per_play"
+        },
+        "def_epa_per_play_adj": {
+          "name": "Opponent-Adjusted Defense EPA per Play",
+          "phase": "defense",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Defensive EPA/play adjusted relative to average offensive strength of opponents.",
+          "formula": "def_epa_per_play_adj = def_epa_per_play - avg_opponent_off_epa_per_play"
+        },
+        "strength_of_schedule_simple": {
+          "name": "Strength of Schedule (Win%)",
+          "phase": "team",
+          "type": "advanced",
+          "unit": "percent",
+          "definition": "Average opponent win percentage based on end-of-season records.",
+          "formula": "strength_of_schedule_simple = mean_over_games(opponent.win_pct)"
+        },
+        "strength_of_schedule_epa": {
+          "name": "Strength of Schedule (EPA-based)",
+          "phase": "team",
+          "type": "advanced",
+          "unit": "EPA_per_play",
+          "definition": "Average of opponents' overall EPA/play relative to league average.",
+          "formula": "strength_of_schedule_epa = mean_over_games(opponent.off_epa_per_play + opponent.def_epa_per_play)"
+        }
+      }
+    }
+  }
+}
