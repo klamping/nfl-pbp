@@ -7,9 +7,19 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 import argparse
-from dotenv import load_dotenv
-import nflreadpy as nfl
-from tqdm import tqdm
+try:  # Optional dependency; script still runs if not installed.
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - graceful fallback
+    def load_dotenv(*args, **kwargs):
+        return None
+try:
+    import nflreadpy as nfl
+except ImportError as exc:
+    raise ImportError("Missing dependency: install nflreadpy (pip install nflreadpy).") from exc
+try:
+    from tqdm import tqdm
+except ImportError as exc:
+    raise ImportError("Missing dependency: install tqdm (pip install tqdm).") from exc
 
 # ------------------------------------------------------------
 # Logging
@@ -27,6 +37,7 @@ log = logging.getLogger("fetch_pbp")
 load_dotenv()
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "data")
 DATA_DIR = os.path.join(OUTPUT_DIR, "pbp_data")
+GAME_META_DIR = os.path.join(OUTPUT_DIR, "game_meta")
 os.makedirs(DATA_DIR, exist_ok=True)
 ALLOWED_MODES = {"historical", "current", "update-current"}
 DEFAULT_MODE = os.getenv("FETCH_MODE", "current").lower()
@@ -189,6 +200,16 @@ def fetch_season_data(season: int) -> Optional[Dict[str, Any]]:
         log.error(f"Error fetching data for {season}: {str(e)}")
         return None
 
+
+def fetch_schedule_data(season: int):
+    """Fetch schedule data for a specific season."""
+    try:
+        log.info(f"Fetching schedule for {season} season...")
+        return nfl.load_schedules(season)
+    except Exception as e:
+        log.error(f"Error fetching schedule for {season}: {str(e)}")
+        return None
+
 def save_week_data(season: int, week: int, data: Dict[str, Any]) -> None:
     """Save play-by-play data to a JSON file."""
     year_dir = os.path.join(DATA_DIR, str(season))
@@ -203,11 +224,58 @@ def save_week_data(season: int, week: int, data: Dict[str, Any]) -> None:
     except Exception as e:
         log.error(f"Error saving data to {file_path}: {str(e)}")
 
+
+def save_game_stats(season: int, week: int, games: List[Dict[str, Any]]) -> None:
+    """Save per-game meta info to a JSON file."""
+    season_dir = os.path.join(GAME_META_DIR, str(season))
+    ensure_directory_exists(season_dir)
+    out_path = os.path.join(season_dir, f"{week:02d}.json")
+    try:
+        with open(out_path, "w") as f:
+            json.dump(games, f, indent=2)
+        log.info(f"Saved game stats to {out_path}")
+    except Exception as e:
+        log.error(f"Error saving game stats to {out_path}: {str(e)}")
+
+
+DROP_SCHEDULE_COLUMNS = {
+    "espn",
+    "ftn",
+    "gsis",
+    "home_coach",
+    "away_coach",
+    "away_qb_name",
+    "home_qb_name",
+    "nfl_detail_id",
+    "old_game_id",
+    "pff",
+    "pfr",
+}
+
+
+def clean_schedule_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Shape schedule row and move results under a nested property."""
+    result_fields = {
+        "home_score": row.get("home_score"),
+        "away_score": row.get("away_score"),
+        "overtime": row.get("overtime"),
+        "result": row.get("result"),
+        "total": row.get("total"),
+    }
+
+    cleaned = {k: v for k, v in row.items() if k not in DROP_SCHEDULE_COLUMNS}
+    for key in result_fields.keys():
+        cleaned.pop(key, None)
+
+    cleaned["results"] = result_fields
+    return cleaned
+
 def process_season(
     season: int,
     weeks: List[int],
     force: bool = False,
     season_data=None,
+    schedule_data=None,
 ) -> None:
     """Process a single season's data."""
     if not weeks:
@@ -230,6 +298,8 @@ def process_season(
         season_data = fetch_season_data(season)
     if season_data is None:
         return
+    if schedule_data is None:
+        schedule_data = fetch_schedule_data(season)
     
     # Process each requested week
     for week in tqdm(weeks_to_process, desc=f"Week Progress - {season}", unit="week"):
@@ -237,6 +307,18 @@ def process_season(
         week_data = season_data.filter(season_data['week'] == week).to_dicts()
         if week_data:
             save_week_data(season, week, week_data)
+
+        if schedule_data is not None:
+            try:
+                week_schedule = schedule_data.filter(
+                    (schedule_data["week"] == week) & (schedule_data["game_type"] == "REG")
+                )
+                raw_games: List[Dict[str, Any]] = week_schedule.to_dicts()
+                games: List[Dict[str, Any]] = [clean_schedule_row(row) for row in raw_games]
+                if games:
+                    save_game_stats(season, week, games)
+            except Exception as exc:
+                log.error(f"Error building schedule game stats for season {season} week {week}: {exc}")
 
 def main() -> None:
     args = parse_arguments()
