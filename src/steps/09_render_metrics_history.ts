@@ -115,8 +115,9 @@ export async function renderMetricsHistory(filePath: string = DEFAULT_HISTORY): 
     return;
   }
 
-  renderTable(records);
-  printSummary(records);
+  const latest = records.slice(-20); // only show last 20 runs
+  renderTable(latest);
+  printSummary(latest);
 }
 
 if (require.main === module) {

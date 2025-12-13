@@ -217,6 +217,14 @@ const stepCatalog: Record<string, Step> = {
       await module.renderMetricsHistory();
     },
   },
+  cleanOutputs: {
+    name: 'Clean generated outputs',
+    description: 'Remove cached predictions and current-season stats so they can be rebuilt fresh.',
+    action: async () => {
+      const module = await import('./steps/00_clean_outputs');
+      await module.cleanOutputs();
+    },
+  },
   validateModel: {
     name: 'Validate predictive model',
     description: 'Compute simple metrics for the model.',
@@ -288,6 +296,7 @@ const SCENARIOS: Record<string, ScenarioDefinition> = {
   'train:model-full': {
     description: 'Process steps and then train/validate the margin regression model.',
     steps: [
+      stepCatalog.cleanOutputs,
       stepCatalog.processStats,
       stepCatalog.buildGameStats,
       stepCatalog.buildTrends,
@@ -301,11 +310,17 @@ const SCENARIOS: Record<string, ScenarioDefinition> = {
   },
   'inference:run': {
     description: 'Run the trained model for inference.',
-    steps: [stepCatalog.runModel],
+    steps: [
+      stepCatalog.runModel
+    ],
   },
   'report:metrics-history': {
     description: 'Render the metrics history table and summary.',
     steps: [stepCatalog.renderMetricsHistory],
+  },
+  'clean:outputs': {
+    description: 'Remove cached predictions and current-season stats before rebuilding.',
+    steps: [stepCatalog.cleanOutputs],
   },
   'run:week-predictions': {
     description: 'Run inference for a specific week number (requires --week).',
@@ -314,6 +329,7 @@ const SCENARIOS: Record<string, ScenarioDefinition> = {
   'refresh:full': {
     description: 'Full refresh: fetch, process, train, validate.',
     steps: [
+      stepCatalog.cleanOutputs,
       stepCatalog.fetchCurrent,
       stepCatalog.processStats,
       stepCatalog.buildGameStats,

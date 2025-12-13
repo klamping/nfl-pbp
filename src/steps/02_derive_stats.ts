@@ -84,11 +84,7 @@ export function computeTeamStatsForWeek(
   const allowedStats = loadAllowedStats();
   const calcs = calculators ?? calcList;
 
-  for (const row of rows) {
-    const gameId = row.game_id;
-    const team = row.posteam;
-    if (!team || !gameId) continue;
-
+  const ensureEntry = (team: string, gameId: string): TeamWeekStatsRow => {
     const mapKey = `${gameId}::${team}`;
     if (!teamStatsByKey.has(mapKey)) {
       const entry: TeamWeekStatsRow = { season, week, game_id: gameId, team, stats: {} };
@@ -96,10 +92,24 @@ export function computeTeamStatsForWeek(
       calcs.forEach((calc) => calc.init?.(ctx));
       teamStatsByKey.set(mapKey, entry);
     }
+    return teamStatsByKey.get(mapKey)!;
+  };
 
-    const entry = teamStatsByKey.get(mapKey)!;
-    const ctx = buildStatContext(entry, metaLookup.get(gameId), allowedStats);
-    calcs.forEach((calc) => calc.accumulate?.(row, ctx));
+  for (const row of rows) {
+    const gameId = row.game_id;
+    const offenseTeam = row.posteam;
+    const defenseTeam = row.defteam;
+    if (!gameId) continue;
+
+    const teams: string[] = [];
+    if (offenseTeam) teams.push(offenseTeam);
+    if (defenseTeam && defenseTeam !== offenseTeam) teams.push(defenseTeam);
+
+    teams.forEach((team) => {
+      const entry = ensureEntry(team, gameId);
+      const ctx = buildStatContext(entry, metaLookup.get(gameId), allowedStats);
+      calcs.forEach((calc) => calc.accumulate?.(row, ctx));
+    });
   }
 
   for (const entry of teamStatsByKey.values()) {

@@ -3,16 +3,16 @@ import path from 'node:path';
 import { offensiveEfficiencyCalculator, offenseEfficiencyScaffold } from './offense_efficiency';
 import { offensivePlayCountCalculator, offenseBasicCalculator, offenseBasicScaffold } from './offense_basic';
 import { buildResultsCalculator, resultsScaffold } from './results';
-import { buildDefenseBasicScaffold } from './defense_basic';
-import { buildDefenseEfficiencyScaffold } from './defense_efficiency';
+import { defenseBasicCalculator, buildDefenseBasicScaffold } from './defense_basic';
+import { defenseEfficiencyCalculator, buildDefenseEfficiencyScaffold } from './defense_efficiency';
 import { buildSpecialTeamsScaffold } from './special_teams';
-import { buildTurnoversPenaltiesScaffold } from './turnovers_penalties';
-import { buildAdvancedEpaSuccessScaffold } from './advanced_epa_success';
-import { buildAdvancedPassingScaffold } from './advanced_passing';
-import { buildAdvancedRushingScaffold } from './advanced_rushing';
-import { buildSituationalLeverageScaffold } from './situational_leverage';
-import { buildStylePaceScaffold } from './style_pace';
-import { buildScheduleAdjustedScaffold } from './schedule_adjusted';
+import { turnoversPenaltiesCalculator, buildTurnoversPenaltiesScaffold } from './turnovers_penalties';
+import { advancedEpaSuccessCalculator, buildAdvancedEpaSuccessScaffold } from './advanced_epa_success';
+import { advancedPassingCalculator, buildAdvancedPassingScaffold } from './advanced_passing';
+import { advancedRushingCalculator, buildAdvancedRushingScaffold } from './advanced_rushing';
+import { situationalLeverageCalculator, buildSituationalLeverageScaffold } from './situational_leverage';
+import { stylePaceCalculator, buildStylePaceScaffold } from './style_pace';
+import { scheduleAdjustedCalculator, buildScheduleAdjustedScaffold } from './schedule_adjusted';
 import { loadAllowedStats, loadSchemaGroups } from './schema';
 import { GameMeta, StatCalculator } from './types';
 
@@ -102,6 +102,15 @@ export function buildCalculators(
     offensiveEfficiencyCalculator,
     offenseBasicScaffold,
     offenseEfficiencyScaffold,
+    defenseBasicCalculator,
+    defenseEfficiencyCalculator,
+    turnoversPenaltiesCalculator,
+    advancedEpaSuccessCalculator,
+    advancedPassingCalculator,
+    advancedRushingCalculator,
+    situationalLeverageCalculator,
+    stylePaceCalculator,
+    scheduleAdjustedCalculator,
     buildResultsCalculator(metaLookup),
     resultsScaffold,
     ...groupScaffolds,

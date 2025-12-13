@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, Iterable, List, Optional, Sequence
 
 
@@ -19,6 +21,8 @@ PREDICTIONS_CSV = DATA_DIR / "predictions.csv"
 
 ID_COLUMN = "meta_game_id"
 DEFAULT_FEATURE_COLUMN = "betting_spread_line"
+MIN_WEEK_WITH_HISTORY = 6  # skip early weeks lacking last5 history
+CURRENT_SEASON = os.environ.get("CURRENT_SEASON") or str(datetime.now().year)
 
 # Configurable columns/prefixes that should be excluded when ingesting CSV rows.
 INFERENCE_EXCLUDE_COLUMNS: set[str] = set()
@@ -73,12 +77,14 @@ def load_inference_rows(
     if not CURRENT_DIR.exists():
         raise FileNotFoundError(f"Current collated directory not found at {CURRENT_DIR}")
 
+    if week is not None and week < MIN_WEEK_WITH_HISTORY:
+        raise ValueError(f"Week {week} is before available trend history; skipping predictions.")
+
     csv_files = sorted(p for p in CURRENT_DIR.glob("*.csv") if p.is_file())
     if week is not None:
-        csv_files = [
-            p for p in csv_files
-            if p.stem.isdigit() and int(p.stem) == week
-        ]
+        csv_files = [p for p in csv_files if p.stem.isdigit() and int(p.stem) == week]
+    else:
+        csv_files = [p for p in csv_files if p.stem.isdigit() and int(p.stem) >= MIN_WEEK_WITH_HISTORY]
     if not csv_files:
         raise FileNotFoundError(
             f"No collated current CSVs found in {CURRENT_DIR}"
@@ -131,6 +137,27 @@ def write_outputs(predictions: List[dict], feature_columns: List[str]) -> None:
             )
 
 
+def write_week_outputs(predictions: List[dict], feature_columns: List[str], week: int, season: str) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    suffix = f"{season}_week{week:02d}"
+    out_json = DATA_DIR / f"predictions_{suffix}.json"
+    out_csv = DATA_DIR / f"predictions_{suffix}.csv"
+
+    out_json.write_text(json.dumps(predictions, indent=2))
+
+    with out_csv.open("w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["game_id", "predicted_margin", "feature_columns"])
+        for row in predictions:
+            writer.writerow(
+                [
+                    row["game_id"],
+                    f"{row['predicted_margin']:.2f}",
+                    ";".join(row["feature_columns"]),
+                ]
+            )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run margin model on collated current data.")
     parser.add_argument(
@@ -162,8 +189,15 @@ def main() -> None:
             }
         )
 
-    write_outputs(predictions, feature_names)
-    print(f"Wrote {len(predictions)} predictions to {PREDICTIONS_JSON}")
+    if args.week is not None:
+        write_week_outputs(predictions, feature_names, args.week, CURRENT_SEASON)
+        print(
+            f"Wrote {len(predictions)} predictions to "
+            f"predictions_{CURRENT_SEASON}_week{args.week:02d}.json/csv"
+        )
+    else:
+        write_outputs(predictions, feature_names)
+        print(f"Wrote {len(predictions)} predictions to {PREDICTIONS_JSON}")
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ interface DerivedRow {
 
 interface HistoryEntry {
   week: number;
+  gameId: string;
   stats: StatBlock;
 }
 
@@ -61,6 +62,52 @@ function averageStats(games: StatBlock[]): StatBlock {
   return averages;
 }
 
+function computeOpponentStrength(
+  teamHistory: HistoryEntry[],
+  metaByGameId: Map<string, any>,
+  team: string,
+  currentWeek: number,
+  historyByTeam: Record<string, HistoryEntry[]>,
+): StatBlock {
+  const opponentAverages: StatBlock[] = [];
+
+  teamHistory.forEach((g) => {
+    if (g.week >= currentWeek) return;
+    const meta = metaByGameId.get(g.gameId);
+    if (!meta) return;
+    const opponent = meta.home_team === team ? meta.away_team : meta.home_team;
+    if (!opponent) return;
+    const oppHistory = (historyByTeam[opponent] ?? []).filter((h) => h.week < currentWeek);
+    if (!oppHistory.length) return;
+    const oppAvg = averageStats(oppHistory.map((h) => h.stats));
+    opponentAverages.push(oppAvg);
+  });
+
+  if (!opponentAverages.length) {
+    return {
+      avg_opponent_off_epa_per_play: 0,
+      avg_opponent_def_epa_per_play: 0,
+      strength_of_schedule_simple: 0,
+      strength_of_schedule_epa: 0,
+    };
+  }
+
+  const mean = (getter: (s: StatBlock) => number): number =>
+    opponentAverages.reduce((sum, s) => sum + getter(s), 0) / opponentAverages.length;
+
+  const oppOff = mean((s) => s.off_epa_per_play ?? 0);
+  const oppDef = mean((s) => s.def_epa_per_play ?? 0);
+  const oppWinPct = mean((s) => s.win_pct ?? 0);
+  const oppEpaCombo = mean((s) => (s.off_epa_per_play ?? 0) + (s.def_epa_per_play ?? 0));
+
+  return {
+    avg_opponent_off_epa_per_play: oppOff,
+    avg_opponent_def_epa_per_play: oppDef,
+    strength_of_schedule_simple: oppWinPct,
+    strength_of_schedule_epa: oppEpaCombo,
+  };
+}
+
 function buildSeasonTrends(season: string, includeSeason: boolean): void {
   if (!includeSeason) return;
 
@@ -73,6 +120,7 @@ function buildSeasonTrends(season: string, includeSeason: boolean): void {
 
   const weeks = listSeasonWeeks(seasonDir);
   const historyByTeam: Record<string, HistoryEntry[]> = {};
+  const metaByGameId = new Map<string, any>();
 
   weeks.forEach((weekFile) => {
     const derivedPath = path.join(seasonDir, weekFile);
@@ -84,7 +132,6 @@ function buildSeasonTrends(season: string, includeSeason: boolean): void {
 
     const derivedRows = readJson<DerivedRow[]>(derivedPath);
     const metaRows = readJson<any[]>(metaPath);
-    const metaByGameId = new Map<string, any>();
     metaRows.forEach((row) => {
       if (row?.game_id) metaByGameId.set(row.game_id, row);
     });
@@ -103,6 +150,24 @@ function buildSeasonTrends(season: string, includeSeason: boolean): void {
       const seasonAvg = averageStats(priorGames.map((g) => g.stats));
       const lastFiveAvg = averageStats(lastFiveGames.map((g) => g.stats));
 
+      const oppStrength = computeOpponentStrength(priorGames, metaByGameId, row.team, weekNumber, historyByTeam);
+      const offAdj = (seasonAvg.off_epa_per_play ?? 0) - (oppStrength.avg_opponent_def_epa_per_play ?? 0);
+      const defAdj = (seasonAvg.def_epa_per_play ?? 0) - (oppStrength.avg_opponent_off_epa_per_play ?? 0);
+
+      seasonAvg.avg_opponent_off_epa_per_play = oppStrength.avg_opponent_off_epa_per_play ?? 0;
+      seasonAvg.avg_opponent_def_epa_per_play = oppStrength.avg_opponent_def_epa_per_play ?? 0;
+      seasonAvg.strength_of_schedule_simple = oppStrength.strength_of_schedule_simple ?? 0;
+      seasonAvg.strength_of_schedule_epa = oppStrength.strength_of_schedule_epa ?? 0;
+      seasonAvg.off_epa_per_play_adj = offAdj;
+      seasonAvg.def_epa_per_play_adj = defAdj;
+
+      lastFiveAvg.avg_opponent_off_epa_per_play = oppStrength.avg_opponent_off_epa_per_play ?? 0;
+      lastFiveAvg.avg_opponent_def_epa_per_play = oppStrength.avg_opponent_def_epa_per_play ?? 0;
+      lastFiveAvg.strength_of_schedule_simple = oppStrength.strength_of_schedule_simple ?? 0;
+      lastFiveAvg.strength_of_schedule_epa = oppStrength.strength_of_schedule_epa ?? 0;
+      lastFiveAvg.off_epa_per_play_adj = offAdj;
+      lastFiveAvg.def_epa_per_play_adj = defAdj;
+
       trendsForWeek.push({
         season: row.season,
         week: row.week,
@@ -115,7 +180,7 @@ function buildSeasonTrends(season: string, includeSeason: boolean): void {
         },
       });
 
-      historyByTeam[row.team] = [...teamHistory, { week: weekNumber, stats: row.stats }];
+      historyByTeam[row.team] = [...teamHistory, { week: weekNumber, stats: row.stats, gameId: row.game_id }];
     });
 
     const dest = path.join(OUTPUT_DIR, season, weekFile);
