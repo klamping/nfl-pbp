@@ -52,12 +52,11 @@ function formatNumber(value: number, digits = 3): string {
 }
 
 function renderTable(records: HistoryRecord[]): void {
-  const headers = ['run_id', 'timestamp', 'accuracy', 'mae', 'rmse', 'bias', 'r2', 'model'];
+  const headers = ['run_id', 'accuracy', 'mae', 'rmse', 'bias', 'r2', 'model'];
   const rows = records.map((r) => [
     r.run_id,
-    r.timestamp,
     r.metrics.accuracy === undefined || Number.isNaN(r.metrics.accuracy)
-      ? 'NaN'
+      ? 'n/a'
       : formatNumber(r.metrics.accuracy, 3),
     formatNumber(r.metrics.mae, 3),
     formatNumber(r.metrics.rmse, 3),

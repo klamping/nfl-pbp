@@ -5,6 +5,8 @@ export function buildResultsCalculator(metaLookup: Map<string, GameMeta>): StatC
     name: 'results_stats',
     finalize(ctx) {
       const meta = metaLookup.get(ctx.game_id);
+      ctx.addStat('games_played', 1);
+
       if (!meta) return;
       const isHome = meta.home_team === ctx.team;
       const pointsFor = isHome ? meta.home_score : meta.away_score;
@@ -12,13 +14,20 @@ export function buildResultsCalculator(metaLookup: Map<string, GameMeta>): StatC
       if (pointsFor === undefined || pointsAgainst === undefined) return;
 
       const diff = Number(pointsFor) - Number(pointsAgainst);
-      const gamesPlayed = 1;
+      const win = diff > 0 ? 1 : 0;
+      const loss = diff < 0 ? 1 : 0;
+      const tie = diff === 0 ? 1 : 0;
+
+      ctx.addStat('wins', win);
+      ctx.addStat('losses', loss);
+      ctx.addStat('ties', tie);
+      ctx.addStat('win_pct', win / Math.max(1, win + loss));
       ctx.addStat('points_for', Number(pointsFor));
       ctx.addStat('points_against', Number(pointsAgainst));
       ctx.addStat('point_differential', diff);
-      ctx.addStat('points_for_per_game', Number(pointsFor) / gamesPlayed);
-      ctx.addStat('points_against_per_game', Number(pointsAgainst) / gamesPlayed);
-      ctx.addStat('scoring_margin_per_game', diff / gamesPlayed);
+      ctx.addStat('points_for_per_game', Number(pointsFor));
+      ctx.addStat('points_against_per_game', Number(pointsAgainst));
+      ctx.addStat('scoring_margin_per_game', diff);
 
       const isOneScore = Math.abs(diff) <= 8;
       ctx.addStat('one_score_games_played', isOneScore ? 1 : 0);
@@ -60,4 +69,3 @@ export const resultsScaffold: StatCalculator = {
     });
   }
 };
-

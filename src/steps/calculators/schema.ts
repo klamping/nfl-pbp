@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const SCHEMA_PATH = path.join(PROJECT_ROOT, 'stats-schema.json');
 
 let allowedStatsCache: Set<string> | null = null;
@@ -40,4 +40,3 @@ export function loadSchemaGroups(): Record<string, string[]> | null {
     return null;
   }
 }
-

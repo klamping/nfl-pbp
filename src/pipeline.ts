@@ -296,6 +296,7 @@ const SCENARIOS: Record<string, ScenarioDefinition> = {
       stepCatalog.runModel,
       stepCatalog.generateResults,
       stepCatalog.validateModel,
+      stepCatalog.renderMetricsHistory
     ],
   },
   'inference:run': {

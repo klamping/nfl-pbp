@@ -25,7 +25,8 @@ HISTORY_CSV = HISTORY_DIR / "metrics_history.csv"
 
 # Configurable columns/prefixes that should be excluded when ingesting CSV rows.
 TRAINING_EXCLUDE_COLUMNS = {"betting_favorite", "betting_underdog"}
-TRAINING_EXCLUDE_PREFIXES = set('meta_')  # keep results_* because target lives there
+TRAINING_EXCLUDE_PREFIXES = {"meta_"}  # keep results_* because target lives there
+TRAINING_EXCLUDE_SUFFIXES = {"games_played", "wins", "losses", "ties", "points_for", "points_against"}
 
 ID_COLUMN = "meta_game_id"
 SEASON_COLUMN = "meta_season"
@@ -70,6 +71,8 @@ def extract_features(
         if any(key.startswith(prefix) for prefix in exclude_prefixes):
             continue
         if key.startswith(TARGET_PREFIX):
+            continue
+        if any(key.endswith(suffix) for suffix in TRAINING_EXCLUDE_SUFFIXES):
             continue
         try:
             num = float(value)
@@ -133,7 +136,25 @@ def load_training_rows(
             seen.add(name)
             ordered.append(name)
 
-    return examples, ordered
+    # Drop features with zero variance (constant across all rows) to avoid singular matrices.
+    variance_flags: Dict[str, Tuple[float, bool]] = {}
+    for name in ordered:
+        variance_flags[name] = (None, False)  # (first_value, has_variance)
+    for ex in examples:
+        for name in ordered:
+            val = ex.features.get(name, 0.0)
+            first, has_var = variance_flags[name]
+            if first is None:
+                variance_flags[name] = (val, has_var)
+            elif not has_var and val != first:
+                variance_flags[name] = (first, True)
+
+    filtered = [name for name in ordered if variance_flags[name][1]]
+
+    if not filtered:
+        raise ValueError("All features were constant/zero; no usable features for training.")
+
+    return examples, filtered
 
 
 def solve_linear_system(A: List[List[float]], b: List[float]) -> List[float]:
@@ -172,6 +193,7 @@ def fit_linear_regression(
     examples: List[TrainingExample], feature_names: List[str]
 ) -> Tuple[float, List[float], float]:
     """Return intercept, coefficients, and mean target from OLS on provided features."""
+    RIDGE_L2 = 1e-6  # small diagonal regularization to handle singular/ill-conditioned matrices
     n = len(examples)
     d = len(feature_names)
     if n == 0 or d == 0:
@@ -190,6 +212,10 @@ def fit_linear_regression(
             xty[i] += row[i] * target
             for j in range(d + 1):
                 xtx[i][j] += row[i] * row[j]
+
+    # Add tiny ridge term to avoid singular matrices when features are collinear/constant.
+    for i in range(d + 1):
+        xtx[i][i] += RIDGE_L2
 
     beta = solve_linear_system(xtx, xty)
     intercept = beta[0]

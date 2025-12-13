@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import _ from 'lodash';
 import { flattenObject } from '../utils';
 
 interface WeekFile {
@@ -12,19 +11,19 @@ interface WeekFile {
 }
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const DERIVED_DIR = path.join(PROJECT_ROOT, 'data', 'derived_stats');
+const TEAM_HISTORY_DIR = path.join(PROJECT_ROOT, 'data', 'team_history');
 const META_DIR = path.join(PROJECT_ROOT, 'data', 'game_meta');
 const OUTPUT_ROOT = path.join(PROJECT_ROOT, 'data', 'collated');
 const CURRENT_SEASON = (process.env.CURRENT_SEASON ?? new Date().getFullYear()).toString();
-function listDerivedWeekFiles(): WeekFile[] {
-  if (!fs.existsSync(DERIVED_DIR)) {
-    throw new Error(`Derived stats directory not found at ${DERIVED_DIR}`);
+function listTeamHistoryWeekFiles(): WeekFile[] {
+  if (!fs.existsSync(TEAM_HISTORY_DIR)) {
+    throw new Error(`Team history directory not found at ${TEAM_HISTORY_DIR}`);
   }
 
-  const seasons = fs.readdirSync(DERIVED_DIR).filter((entry) => /^\d{4}$/.test(entry));
+  const seasons = fs.readdirSync(TEAM_HISTORY_DIR).filter((entry) => /^\d{4}$/.test(entry));
   const files: WeekFile[] = [];
   seasons.forEach((season) => {
-    const seasonDir = path.join(DERIVED_DIR, season);
+    const seasonDir = path.join(TEAM_HISTORY_DIR, season);
     if (!fs.statSync(seasonDir).isDirectory()) return;
     fs.readdirSync(seasonDir)
       .filter((f) => f.endsWith('.json'))
@@ -54,7 +53,7 @@ function determineFavorite(meta: any): { favorite: string; underdog: string } | 
   return { favorite: home, underdog: away }; // spread = 0 defaults home as favorite
 }
 
-function mergeRows(derivedRows: any[], metaRows: any[]): any[] {
+function mergeRows(historyRows: any[], metaRows: any[]): any[] {
   const metaByGameId = new Map<string, any>();
   metaRows.forEach((row) => {
     if (row.game_id) {
@@ -62,10 +61,10 @@ function mergeRows(derivedRows: any[], metaRows: any[]): any[] {
     }
   });
 
-  const derivedByGameTeam = new Map<string, any>();
-  derivedRows.forEach((row) => {
+  const historyByGameTeam = new Map<string, any>();
+  historyRows.forEach((row) => {
     if (row.game_id && row.team) {
-      derivedByGameTeam.set(`${row.game_id}::${row.team}`, row);
+      historyByGameTeam.set(`${row.game_id}::${row.team}`, row);
     }
   });
 
@@ -75,8 +74,8 @@ function mergeRows(derivedRows: any[], metaRows: any[]): any[] {
     if (!fav) {
       return;
     }
-    const favoriteRow = derivedByGameTeam.get(`${gameId}::${fav.favorite}`);
-    const underdogRow = derivedByGameTeam.get(`${gameId}::${fav.underdog}`);
+    const favoriteRow = historyByGameTeam.get(`${gameId}::${fav.favorite}`);
+    const underdogRow = historyByGameTeam.get(`${gameId}::${fav.underdog}`);
     if (!favoriteRow || !underdogRow) {
       return;
     }
@@ -119,8 +118,16 @@ function mergeRows(derivedRows: any[], metaRows: any[]): any[] {
         total: results.total,
       },
       teamStats: {
-        favorite: favoriteRow.stats,
-        underdog: underdogRow.stats
+        favorite: {
+          games_played: favoriteRow.games_played,
+          season: favoriteRow.stats?.season,
+          last5: favoriteRow.stats?.last5,
+        },
+        underdog: {
+          games_played: underdogRow.games_played,
+          season: underdogRow.stats?.season,
+          last5: underdogRow.stats?.last5,
+        },
       }
     };
 
@@ -175,24 +182,28 @@ export async function collateData(options?: { includeHistorical?: boolean; inclu
   const includeHistorical = options?.includeHistorical ?? true;
   const includeCurrent = options?.includeCurrent ?? true;
 
-  const weekFiles = listDerivedWeekFiles();
+  const weekFiles = listTeamHistoryWeekFiles();
   if (!weekFiles.length) {
-    console.info('No derived stats files found; nothing to do.');
+    console.info('No team history files found; nothing to do.');
     return;
   }
 
   const historicalRows: any[] = [];
 
   for (const wf of weekFiles) {
+    // skip the first 5 week, since there isn't enough trend data
+    if (parseInt(wf.week) < 5) {
+      continue;
+    }
     const metaPath = path.join(META_DIR, wf.season, `${wf.week}.json`);
     if (!fs.existsSync(metaPath)) {
       console.warn(`Skipping ${wf.season} week ${wf.week}: no meta file at ${metaPath}`);
       continue;
     }
 
-    const derived = readJson(wf.filePath);
+    const historyRows = readJson(wf.filePath);
     const meta = readJson(metaPath);
-    const merged = mergeRows(derived, meta);
+    const merged = mergeRows(historyRows, meta);
 
     if (wf.season === CURRENT_SEASON) {
       const outPath = path.join(OUTPUT_ROOT, 'current', `${wf.week}.csv`);

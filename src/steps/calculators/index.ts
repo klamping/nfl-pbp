@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { offensiveEfficiencyCalculator, offenseEfficiencyScaffold } from './offense_efficiency';
-import { offensivePlayCountCalculator, offenseBasicScaffold } from './offense_basic';
+import { offensivePlayCountCalculator, offenseBasicCalculator, offenseBasicScaffold } from './offense_basic';
 import { buildResultsCalculator, resultsScaffold } from './results';
 import { buildDefenseBasicScaffold } from './defense_basic';
 import { buildDefenseEfficiencyScaffold } from './defense_efficiency';
@@ -16,7 +16,7 @@ import { buildScheduleAdjustedScaffold } from './schedule_adjusted';
 import { loadAllowedStats, loadSchemaGroups } from './schema';
 import { GameMeta, StatCalculator } from './types';
 
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const META_DIR = path.join(PROJECT_ROOT, 'data', 'game_meta');
 
 function loadWeekMeta(season: string, week: string): Map<string, GameMeta> {
@@ -98,6 +98,7 @@ export function buildCalculators(
 
   const defaults: StatCalculator[] = [
     offensivePlayCountCalculator,
+    offenseBasicCalculator,
     offensiveEfficiencyCalculator,
     offenseBasicScaffold,
     offenseEfficiencyScaffold,
